@@ -1,3 +1,12 @@
+.grid:focus {
+  outline: none;
+}
+
+.grid:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: var(--space-2);
+}
+
 .refreshing {
   opacity: 0.55;
   transition: opacity var(--duration) var(--ease-out);

@@ -17,7 +17,8 @@ export function ExplorePage() {
   const search = useSearch(query, requestedPage)
 
   const apply = (next: SearchQuery) => {
-    setSearchParams(next.toSearchParams(), { preventScrollReset: true })
+    const page = next.cacheKey === query.cacheKey ? requestedPage : 1
+    setSearchParams(next.toSearchParams(page), { preventScrollReset: true })
   }
 
   return (

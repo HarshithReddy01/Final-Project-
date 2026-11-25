@@ -1,4 +1,5 @@
 import type { UseQueryResult } from '@tanstack/react-query'
+import { useEffect, useRef } from 'react'
 import { Navigate } from 'react-router'
 import { ArtworkCard } from '../../components/ArtworkCard/ArtworkCard.tsx'
 import { ArtworkCardSkeleton } from '../../components/ArtworkCard/ArtworkCardSkeleton.tsx'
@@ -26,7 +27,15 @@ type SearchResultsProps = {
 
 export function SearchResults({ query, requestedPage, search, onChange }: SearchResultsProps) {
   const loads = useArtworkLoads(search.data?.objectIds ?? [])
+  const gridRef = useRef<HTMLUListElement>(null)
+  const focusGridOnReveal = useRef(false)
   const title = ResultsHeading.title(query)
+
+  useEffect(() => {
+    if (!focusGridOnReveal.current || !query.includeImageless) return
+    focusGridOnReveal.current = false
+    gridRef.current?.focus({ preventScroll: true })
+  }, [query.includeImageless])
 
   if (search.isPending) {
     return (
@@ -51,7 +60,11 @@ export function SearchResults({ query, requestedPage, search, onChange }: Search
   const results = search.data
   const pagination = new PageModel(results.total, requestedPage)
   const visible = VisibleResults.from(loads, query.includeImageless)
-  const showImageless = () => onChange(query.with({ includeImageless: true }))
+  const toggleImageless = () => onChange(query.with({ includeImageless: !query.includeImageless }))
+  const revealAll = () => {
+    focusGridOnReveal.current = true
+    onChange(query.with({ includeImageless: true }))
+  }
 
   if (results.total === 0) {
     return (
@@ -80,15 +93,17 @@ export function SearchResults({ query, requestedPage, search, onChange }: Search
           announce="status"
           headingLevel="h3"
           title="No open-access images on this page"
-          action={<Button onClick={showImageless}>Show these works anyway</Button>}
+          action={<Button onClick={revealAll}>Show these works anyway</Button>}
         >
           These works are in The Met’s collection, but their images aren’t part of the Open Access program.
         </StatusMessage>
       ) : (
         <ArtworkGrid
+          ref={gridRef}
+          tabIndex={-1}
           aria-label={title}
           aria-busy={search.isPlaceholderData || !visible.isSettled}
-          className={cx(search.isPlaceholderData && styles.refreshing)}
+          className={cx(styles.grid, search.isPlaceholderData && styles.refreshing)}
         >
           {visible.ids.map((objectId) => (
             <ArtworkCard key={objectId} objectId={objectId} backLabel={ResultsHeading.backLabel(query)} />
@@ -98,8 +113,12 @@ export function SearchResults({ query, requestedPage, search, onChange }: Search
           ))}
         </ArtworkGrid>
       )}
-      {visible.isSettled && visible.hiddenCount > 0 && !visible.isEmpty && (
-        <HiddenWorksNote count={visible.hiddenCount} onShow={showImageless} />
+      {visible.isSettled && visible.imagelessCount > 0 && !visible.isEmpty && (
+        <HiddenWorksNote
+          count={visible.imagelessCount}
+          isShowing={query.includeImageless}
+          onToggle={toggleImageless}
+        />
       )}
       <Pagination pagination={pagination} />
     </Section>
