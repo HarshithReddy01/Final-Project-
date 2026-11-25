@@ -138,3 +138,27 @@ describe('SearchQuery', () => {
     })
   })
 })
+
+describe('SearchQuery images option', () => {
+  it('hides works without images unless the URL asks for them', () => {
+    expect(SearchQuery.empty.includeImageless).toBe(false)
+    expect(SearchQuery.fromSearchParams(new URLSearchParams('images=all')).includeImageless).toBe(true)
+    expect(SearchQuery.fromSearchParams(new URLSearchParams('images=yes')).includeImageless).toBe(false)
+  })
+
+  it('round-trips through the URL without counting as a filter', () => {
+    const query = SearchQuery.empty.with({ text: 'monet', includeImageless: true })
+
+    expect(query.toSearchParams().toString()).toBe('q=monet&images=all')
+    expect(SearchQuery.empty.with({ includeImageless: true }).isBlank).toBe(true)
+    expect(query.equals(SearchQuery.empty.with({ text: 'monet' }))).toBe(false)
+  })
+
+  it('asks The Met for the same results either way, so toggling it reuses the cache', () => {
+    const hidden = SearchQuery.empty.with({ text: 'monet' })
+    const shown = hidden.with({ includeImageless: true })
+
+    expect(shown.cacheKey).toBe(hidden.cacheKey)
+    expect(shown.toApiParams().has('images')).toBe(false)
+  })
+})

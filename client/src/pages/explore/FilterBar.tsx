@@ -76,6 +76,11 @@ export function FilterBar({ query, onChange }: FilterBarProps) {
           checked={query.onViewOnly}
           onChange={(event) => onChange(query.with({ onViewOnly: event.target.checked }))}
         />
+        <Checkbox
+          label="Include works without images"
+          checked={query.includeImageless}
+          onChange={(event) => onChange(query.with({ includeImageless: event.target.checked }))}
+        />
       </div>
       {!query.equals(SearchQuery.empty) && (
         <Button variant="quiet" onClick={() => onChange(SearchQuery.empty)} className={styles.clear}>

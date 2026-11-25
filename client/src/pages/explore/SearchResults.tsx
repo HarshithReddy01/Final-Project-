@@ -1,15 +1,19 @@
 import type { UseQueryResult } from '@tanstack/react-query'
 import { Navigate } from 'react-router'
 import { ArtworkCard } from '../../components/ArtworkCard/ArtworkCard.tsx'
+import { ArtworkCardSkeleton } from '../../components/ArtworkCard/ArtworkCardSkeleton.tsx'
 import { ArtworkGrid, ArtworkGridSkeleton } from '../../components/ArtworkGrid/ArtworkGrid.tsx'
 import { Button } from '../../components/Button/Button.tsx'
 import { Pagination } from '../../components/Pagination/Pagination.tsx'
 import { Section } from '../../components/Section/Section.tsx'
 import { StatusMessage } from '../../components/StatusMessage/StatusMessage.tsx'
+import { useArtworkLoads } from '../../hooks/useCollection.ts'
 import { cx } from '../../lib/cx.ts'
 import { Pagination as PageModel } from '../../lib/met/Pagination.ts'
 import { SearchQuery } from '../../lib/met/SearchQuery.ts'
 import type { SearchPage } from '../../lib/met/SearchPage.ts'
+import { VisibleResults } from '../../lib/met/VisibleResults.ts'
+import { HiddenWorksNote } from './HiddenWorksNote.tsx'
 import { ResultsHeading } from './ResultsHeading.ts'
 import styles from './SearchResults.module.css'
 
@@ -17,10 +21,11 @@ type SearchResultsProps = {
   readonly query: SearchQuery
   readonly requestedPage: number
   readonly search: UseQueryResult<SearchPage>
-  readonly onClear: () => void
+  readonly onChange: (query: SearchQuery) => void
 }
 
-export function SearchResults({ query, requestedPage, search, onClear }: SearchResultsProps) {
+export function SearchResults({ query, requestedPage, search, onChange }: SearchResultsProps) {
+  const loads = useArtworkLoads(search.data?.objectIds ?? [])
   const title = ResultsHeading.title(query)
 
   if (search.isPending) {
@@ -45,13 +50,19 @@ export function SearchResults({ query, requestedPage, search, onClear }: SearchR
 
   const results = search.data
   const pagination = new PageModel(results.total, requestedPage)
+  const visible = VisibleResults.from(loads, query.includeImageless)
+  const showImageless = () => onChange(query.with({ includeImageless: true }))
 
   if (results.total === 0) {
     return (
       <StatusMessage
         announce="status"
         title="No works match"
-        action={query.equals(SearchQuery.empty) ? undefined : <Button onClick={onClear}>Clear filters</Button>}
+        action={
+          query.equals(SearchQuery.empty) ? undefined : (
+            <Button onClick={() => onChange(SearchQuery.empty)}>Clear filters</Button>
+          )
+        }
       >
         Try a broader term or remove a filter.
       </StatusMessage>
@@ -64,15 +75,32 @@ export function SearchResults({ query, requestedPage, search, onClear }: SearchR
 
   return (
     <Section title={title} meta={ResultsHeading.meta(pagination)}>
-      <ArtworkGrid
-        aria-label={title}
-        aria-busy={search.isPlaceholderData}
-        className={cx(search.isPlaceholderData && styles.refreshing)}
-      >
-        {results.objectIds.map((objectId) => (
-          <ArtworkCard key={objectId} objectId={objectId} backLabel={ResultsHeading.backLabel(query)} />
-        ))}
-      </ArtworkGrid>
+      {visible.isEmpty ? (
+        <StatusMessage
+          announce="status"
+          headingLevel="h3"
+          title="No open-access images on this page"
+          action={<Button onClick={showImageless}>Show these works anyway</Button>}
+        >
+          These works are in The Met’s collection, but their images aren’t part of the Open Access program.
+        </StatusMessage>
+      ) : (
+        <ArtworkGrid
+          aria-label={title}
+          aria-busy={search.isPlaceholderData || !visible.isSettled}
+          className={cx(search.isPlaceholderData && styles.refreshing)}
+        >
+          {visible.ids.map((objectId) => (
+            <ArtworkCard key={objectId} objectId={objectId} backLabel={ResultsHeading.backLabel(query)} />
+          ))}
+          {Array.from({ length: visible.pendingCount }, (_, index) => (
+            <ArtworkCardSkeleton key={`pending-${index}`} />
+          ))}
+        </ArtworkGrid>
+      )}
+      {visible.isSettled && visible.hiddenCount > 0 && !visible.isEmpty && (
+        <HiddenWorksNote count={visible.hiddenCount} onShow={showImageless} />
+      )}
       <Pagination pagination={pagination} />
     </Section>
   )

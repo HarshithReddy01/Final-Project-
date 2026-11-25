@@ -13,6 +13,7 @@ export type SearchQueryValues = {
   readonly periodKey: PeriodKey | null
   readonly highlightsOnly: boolean
   readonly onViewOnly: boolean
+  readonly includeImageless: boolean
 }
 
 export class SearchQuery {
@@ -25,8 +26,10 @@ export class SearchQuery {
     period: 'period',
     highlights: 'highlights',
     onView: 'onView',
+    images: 'images',
   } as const
   static readonly #flag = '1'
+  static readonly #allImages = 'all'
   static readonly #whitespace = /\s+/g
   static readonly empty = new SearchQuery({
     text: '',
@@ -35,6 +38,7 @@ export class SearchQuery {
     periodKey: null,
     highlightsOnly: false,
     onViewOnly: false,
+    includeImageless: false,
   })
 
   readonly text: string
@@ -43,6 +47,7 @@ export class SearchQuery {
   readonly periodKey: PeriodKey | null
   readonly highlightsOnly: boolean
   readonly onViewOnly: boolean
+  readonly includeImageless: boolean
 
   constructor(values: SearchQueryValues) {
     this.text = SearchQuery.#normalizeText(values.text)
@@ -51,6 +56,7 @@ export class SearchQuery {
     this.periodKey = Period.find(values.periodKey)?.key ?? null
     this.highlightsOnly = values.highlightsOnly
     this.onViewOnly = values.onViewOnly
+    this.includeImageless = values.includeImageless
   }
 
   static fromSearchParams(params: URLSearchParams): SearchQuery {
@@ -62,6 +68,7 @@ export class SearchQuery {
       periodKey: Period.find(params.get(names.period))?.key ?? null,
       highlightsOnly: params.get(names.highlights) === SearchQuery.#flag,
       onViewOnly: params.get(names.onView) === SearchQuery.#flag,
+      includeImageless: params.get(names.images) === SearchQuery.#allImages,
     })
   }
 
@@ -98,6 +105,7 @@ export class SearchQuery {
     if (this.periodKey !== null) params.set(names.period, this.periodKey)
     if (this.highlightsOnly) params.set(names.highlights, SearchQuery.#flag)
     if (this.onViewOnly) params.set(names.onView, SearchQuery.#flag)
+    if (this.includeImageless) params.set(names.images, SearchQuery.#allImages)
     if (page > 1) params.set(Pagination.pageParam, String(Math.floor(page)))
     return params
   }
@@ -128,6 +136,7 @@ export class SearchQuery {
       periodKey: this.periodKey,
       highlightsOnly: this.highlightsOnly,
       onViewOnly: this.onViewOnly,
+      includeImageless: this.includeImageless,
     }
   }
 

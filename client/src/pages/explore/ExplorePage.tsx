@@ -30,12 +30,7 @@ export function ExplorePage() {
         <SearchForm query={query} onSearch={apply} />
         <FilterBar query={query} onChange={apply} />
       </div>
-      <SearchResults
-        query={query}
-        requestedPage={requestedPage}
-        search={search}
-        onClear={() => apply(SearchQuery.empty)}
-      />
+      <SearchResults query={query} requestedPage={requestedPage} search={search} onChange={apply} />
     </Page>
   )
 }
