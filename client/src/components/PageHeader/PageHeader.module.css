@@ -1,0 +1,16 @@
+.header {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-4);
+}
+
+.display {
+  max-width: 18ch;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+}

@@ -1,0 +1,110 @@
+.button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  width: fit-content;
+  min-height: var(--control-height);
+  padding-inline: var(--space-5);
+  border: 1px solid transparent;
+  border-radius: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: var(--leading-snug);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out),
+    text-decoration-color var(--duration-fast) var(--ease-out);
+}
+
+.primary {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.secondary {
+  border-color: var(--rule-strong);
+  background: transparent;
+  color: var(--ink);
+}
+
+.quiet {
+  padding-inline: 0;
+  color: var(--ink-2);
+  text-decoration-line: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+}
+
+.small {
+  min-height: calc(var(--control-height) - var(--space-2));
+  padding-inline: var(--space-4);
+}
+
+.small.quiet {
+  padding-inline: 0;
+}
+
+.small::before {
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  height: var(--control-height);
+  translate: 0 -50%;
+  content: '';
+}
+
+.block {
+  display: flex;
+  width: 100%;
+}
+
+@media (hover: hover) {
+  .primary:hover:not(:disabled, [aria-disabled='true']) {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  .secondary:hover:not(:disabled, [aria-disabled='true']) {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .quiet:hover:not(:disabled, [aria-disabled='true']) {
+    color: var(--ink);
+    text-decoration-color: currentColor;
+  }
+}
+
+.button:disabled {
+  cursor: not-allowed;
+}
+
+.primary:disabled {
+  border-color: var(--rule);
+  background: var(--rule);
+  color: var(--ink-3);
+}
+
+.secondary:disabled {
+  border-color: var(--rule);
+  color: var(--ink-3);
+}
+
+.quiet:disabled {
+  color: var(--ink-3);
+}
+
+.button[aria-busy='true'] {
+  cursor: progress;
+}

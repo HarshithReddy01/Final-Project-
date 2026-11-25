@@ -1,0 +1,123 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: var(--hairline);
+  background: var(--paper);
+}
+
+.bar {
+  display: grid;
+  grid-template-areas:
+    'brand account'
+    'nav nav';
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-4);
+  max-width: var(--page-max);
+  margin-inline: auto;
+  padding: var(--space-2) var(--gutter) 0;
+}
+
+.wordmark {
+  display: inline-flex;
+  grid-area: brand;
+  align-items: center;
+  justify-self: start;
+  min-height: var(--control-height);
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  line-height: 1;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.nav {
+  display: flex;
+  grid-area: nav;
+  gap: var(--space-5);
+}
+
+.navLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--ink-2);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.navLabel {
+  text-decoration-line: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.5em;
+  transition: text-decoration-color var(--duration-fast) var(--ease-out);
+}
+
+.active {
+  color: var(--ink);
+}
+
+.active .navLabel {
+  text-decoration-color: var(--ink);
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 400;
+  letter-spacing: var(--tracking-label);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.account {
+  display: flex;
+  grid-area: account;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.username {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--ink-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .bar {
+    grid-template-areas: 'brand nav account';
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    column-gap: var(--space-7);
+    min-height: var(--header-height);
+    padding-top: 0;
+  }
+
+  .nav {
+    gap: var(--space-6);
+  }
+
+  .account {
+    gap: var(--space-5);
+  }
+
+  .username {
+    max-width: 24ch;
+  }
+}
+
+@media (hover: hover) {
+  .navLink:hover {
+    color: var(--ink);
+  }
+}

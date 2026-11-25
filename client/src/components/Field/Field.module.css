@@ -1,0 +1,64 @@
+.field {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: var(--leading-snug);
+  color: var(--ink);
+}
+
+.box {
+  min-height: var(--control-height);
+  border: 1px solid var(--ink-3);
+  border-radius: 0;
+  background: var(--paper-raised);
+  color: var(--ink);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+
+.box:focus-within {
+  border-color: var(--ink);
+}
+
+@media (hover: hover) {
+  .box:hover {
+    border-color: var(--ink);
+  }
+}
+
+.invalid,
+.invalid:hover,
+.invalid:focus-within {
+  border-color: var(--accent);
+}
+
+.footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.messages {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.hint,
+.error {
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+}
+
+.hint {
+  color: var(--ink-3);
+}
+
+.error {
+  color: var(--accent);
+}

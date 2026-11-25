@@ -1,0 +1,55 @@
+.caption {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.title {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: var(--text-md);
+  line-height: var(--leading-snug);
+  color: var(--ink);
+  text-decoration-line: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  transition: text-decoration-color var(--duration-fast) var(--ease-out);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.maker {
+  overflow: hidden;
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  color: var(--ink-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.date {
+  margin-top: var(--space-1);
+}
+
+.large .title {
+  font-size: var(--text-xl);
+  -webkit-line-clamp: 3;
+}
+
+.large .maker {
+  font-size: var(--text-base);
+  white-space: normal;
+}
+
+@media (min-width: 640px) {
+  .title {
+    font-size: var(--text-lg);
+  }
+}
+
+@media (hover: hover) {
+  a:hover .title {
+    text-decoration-color: currentColor;
+  }
+}

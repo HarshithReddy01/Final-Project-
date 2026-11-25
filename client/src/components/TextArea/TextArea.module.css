@@ -1,0 +1,16 @@
+.textarea {
+  display: block;
+  width: 100%;
+  padding: var(--space-3);
+  line-height: var(--leading-normal);
+}
+
+.count {
+  flex: none;
+  margin-inline-start: auto;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-label);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}

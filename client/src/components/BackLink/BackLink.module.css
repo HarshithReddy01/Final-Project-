@@ -1,0 +1,30 @@
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: fit-content;
+  min-height: var(--control-height);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--ink-2);
+  text-decoration: none;
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.label {
+  text-decoration-line: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.3em;
+  transition: text-decoration-color var(--duration-fast) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .back:hover {
+    color: var(--ink);
+  }
+
+  .back:hover .label {
+    text-decoration-color: currentColor;
+  }
+}

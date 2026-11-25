@@ -1,0 +1,35 @@
+.icon {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  width: var(--control-height);
+  height: var(--control-height);
+  padding: var(--space-1);
+  font-size: var(--text-base);
+  color: var(--ink-2);
+  transition:
+    color var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
+}
+
+.icon[aria-disabled='true'] {
+  cursor: progress;
+}
+
+.icon.saved {
+  color: var(--accent);
+}
+
+.saved .mark {
+  color: var(--accent);
+}
+
+@media (hover: hover) {
+  .icon:hover {
+    color: var(--ink);
+  }
+
+  .icon.saved:hover {
+    color: var(--accent);
+  }
+}

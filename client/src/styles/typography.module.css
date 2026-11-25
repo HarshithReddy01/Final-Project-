@@ -1,0 +1,36 @@
+.display {
+  font-family: var(--font-serif);
+  font-size: var(--text-display);
+  font-weight: 400;
+  line-height: var(--leading-tight);
+}
+
+.heading {
+  font-family: var(--font-serif);
+  font-size: var(--text-2xl);
+  font-weight: 400;
+  line-height: var(--leading-tight);
+}
+
+.lead {
+  max-width: 46ch;
+  font-size: var(--text-md);
+  line-height: var(--leading-normal);
+  color: var(--ink-2);
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 400;
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.artworkTitle {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+}

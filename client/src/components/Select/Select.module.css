@@ -1,0 +1,21 @@
+.control {
+  position: relative;
+  display: grid;
+}
+
+.select {
+  width: 100%;
+  padding-inline: var(--space-3) var(--space-7);
+  appearance: none;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.chevron {
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  translate: 0 -50%;
+  color: var(--ink-2);
+  pointer-events: none;
+}

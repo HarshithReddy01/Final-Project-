@@ -1,0 +1,38 @@
+.card {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.link {
+  display: grid;
+  gap: var(--space-3);
+  color: inherit;
+  text-decoration: none;
+}
+
+.link:focus-visible {
+  outline-offset: var(--space-1);
+}
+
+.note {
+  display: -webkit-box;
+  padding-top: var(--space-3);
+  overflow: hidden;
+  border-top: var(--hairline);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--ink-2);
+  white-space: pre-line;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 var(--space-4);
+}

@@ -1,0 +1,19 @@
+.message {
+  display: grid;
+  justify-items: start;
+  gap: var(--space-3);
+  max-width: 40rem;
+  padding-block: var(--space-5) var(--space-7);
+}
+
+.body {
+  max-width: 46ch;
+  color: var(--ink-2);
+}
+
+.action {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-top: var(--space-3);
+}
