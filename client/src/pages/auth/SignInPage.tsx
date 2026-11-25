@@ -1,8 +1,10 @@
+import { AuthForm } from './AuthForm.tsx'
+import { AuthLayout } from './AuthLayout.tsx'
+
 export function SignInPage() {
   return (
-    <>
-      <title>Sign in · Vitrine</title>
-      <h1>Sign in</h1>
-    </>
+    <AuthLayout title="Sign in">
+      <AuthForm mode="sign-in" />
+    </AuthLayout>
   )
 }

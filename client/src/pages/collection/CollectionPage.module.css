@@ -1,0 +1,22 @@
+.body {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-4) var(--space-5);
+  padding-bottom: var(--space-5);
+  border-bottom: var(--hairline);
+}
+
+.filter {
+  flex: 1 1 18rem;
+  max-width: 30rem;
+}
+
+.sort {
+  flex: 0 1 13rem;
+}

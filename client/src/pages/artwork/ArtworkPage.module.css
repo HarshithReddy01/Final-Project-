@@ -1,0 +1,60 @@
+.stack {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.article {
+  display: grid;
+  align-items: start;
+  gap: var(--space-7);
+}
+
+@media (min-width: 1024px) {
+  .article {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: var(--space-8);
+  }
+}
+
+.placeholderFrame,
+.placeholderLine {
+  background: var(--mat);
+  animation: breathe 1.4s var(--ease-out) infinite alternate;
+}
+
+.placeholderFrame {
+  aspect-ratio: 4 / 3;
+}
+
+.placeholderLabel {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.placeholderLine {
+  display: block;
+  height: var(--space-4);
+}
+
+.placeholderLine:nth-child(1) {
+  width: 35%;
+}
+
+.placeholderLine:nth-child(2) {
+  height: var(--space-7);
+  width: 80%;
+}
+
+.placeholderLine:nth-child(3) {
+  width: 50%;
+}
+
+.placeholderLine:nth-child(4) {
+  width: 65%;
+}
+
+@keyframes breathe {
+  to {
+    opacity: 0.55;
+  }
+}

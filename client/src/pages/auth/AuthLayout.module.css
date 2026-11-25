@@ -1,0 +1,17 @@
+.layout {
+  display: grid;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.form {
+  width: 100%;
+  max-width: 24rem;
+}
+
+@media (min-width: 960px) {
+  .layout {
+    grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
+    gap: var(--space-9);
+  }
+}

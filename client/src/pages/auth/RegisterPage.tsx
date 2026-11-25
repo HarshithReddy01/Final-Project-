@@ -1,8 +1,10 @@
+import { AuthForm } from './AuthForm.tsx'
+import { AuthLayout } from './AuthLayout.tsx'
+
 export function RegisterPage() {
   return (
-    <>
-      <title>Create an account · Vitrine</title>
-      <h1>Create an account</h1>
-    </>
+    <AuthLayout title="Create an account">
+      <AuthForm mode="register" />
+    </AuthLayout>
   )
 }

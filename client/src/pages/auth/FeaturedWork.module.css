@@ -1,0 +1,23 @@
+.feature {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  .feature {
+    display: block;
+    justify-self: end;
+    width: 100%;
+    max-width: 34rem;
+  }
+}
+
+.figure {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.placeholder {
+  aspect-ratio: 4 / 5;
+  background: var(--mat);
+}

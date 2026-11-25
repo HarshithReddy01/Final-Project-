@@ -1,8 +1,19 @@
+import { ButtonLink } from '../../components/Button/Button.tsx'
+import { Page } from '../../components/Page/Page.tsx'
+import { PageHeader } from '../../components/PageHeader/PageHeader.tsx'
+
 export function NotFoundPage() {
   return (
-    <>
-      <title>Not found · Vitrine</title>
-      <h1>Not found</h1>
-    </>
+    <Page title="Not found">
+      <PageHeader
+        title="Not in the collection"
+        lead="The page you were looking for doesn’t exist."
+        actions={
+          <ButtonLink to="/" variant="primary">
+            Back to explore
+          </ButtonLink>
+        }
+      />
+    </Page>
   )
 }

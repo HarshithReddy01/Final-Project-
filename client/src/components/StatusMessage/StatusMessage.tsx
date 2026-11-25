@@ -8,7 +8,7 @@ type StatusMessageProps = {
   readonly children?: ReactNode
   readonly action?: ReactNode
   readonly headingLevel?: 'h1' | 'h2' | 'h3'
-  readonly role?: 'status' | 'alert'
+  readonly announce?: 'status' | 'alert'
   readonly className?: string
 }
 
@@ -17,11 +17,11 @@ export function StatusMessage({
   children,
   action,
   headingLevel: Heading = 'h2',
-  role,
+  announce,
   className,
 }: StatusMessageProps) {
   return (
-    <div role={role} className={cx(styles.message, className)}>
+    <div role={announce} className={cx(styles.message, className)}>
       <Heading className={typography.heading}>{title}</Heading>
       {children !== undefined && <div className={styles.body}>{children}</div>}
       {action !== undefined && <div className={styles.action}>{action}</div>}

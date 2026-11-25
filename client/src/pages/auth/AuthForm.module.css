@@ -1,0 +1,24 @@
+.panel {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.formError {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  color: var(--accent);
+}
+
+.switch {
+  margin: 0;
+  padding-top: var(--space-5);
+  border-top: var(--hairline);
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
