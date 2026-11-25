@@ -4,7 +4,7 @@ A quiet reading room for The Metropolitan Museum of Art's Open Access collection
 
 **Live site:** https://harshithreddy01.github.io/Final-Project-/
 
-The API runs on Render's free plan, which sleeps when idle. Searching works instantly because it talks to The Met directly; the first sign-in after a quiet period can take up to a minute while the server wakes up.
+The API runs at https://vitrine-api-t15u.onrender.com on Render's free plan, which sleeps when idle. Searching works instantly because it talks to The Met directly; the first sign-in after a quiet period can take up to a minute while the server wakes up.
 
 ## Features
 
