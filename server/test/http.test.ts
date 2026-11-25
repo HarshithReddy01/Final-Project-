@@ -3,11 +3,13 @@ import { HttpServer } from '../src/HttpServer.ts'
 import { Logger } from '../src/shared/Logger.ts'
 import { TestApp } from './support/TestApp.ts'
 
+const pagesOrigin = 'https://harshithreddy01.github.io'
+
 describe('HTTP surface', () => {
   let app: TestApp
 
-  beforeEach(() => {
-    app = new TestApp()
+  beforeEach(async () => {
+    app = await TestApp.create()
   })
 
   afterEach(() => {
@@ -21,7 +23,7 @@ describe('HTTP surface', () => {
     expect(response.body).toEqual({ status: 'ok' })
   })
 
-  it('sends the content security policy and hides the framework', async () => {
+  it('sends the security headers and hides the framework', async () => {
     const response = await app.request().get('/api/health')
 
     expect(response.get('Content-Security-Policy')).toBe(
@@ -30,8 +32,15 @@ describe('HTTP surface', () => {
         "style-src 'self' 'unsafe-inline';script-src 'self';object-src 'none';base-uri 'self';" +
         "frame-ancestors 'none';form-action 'self'",
     )
+    expect(response.get('Cross-Origin-Resource-Policy')).toBe('cross-origin')
     expect(response.get('X-Content-Type-Options')).toBe('nosniff')
     expect(response.get('X-Powered-By')).toBeUndefined()
+  })
+
+  it('keeps every API response out of caches', async () => {
+    const response = await app.request().get('/api/health')
+
+    expect(response.get('Cache-Control')).toBe('no-store')
   })
 
   it.each([
@@ -71,18 +80,73 @@ describe('HTTP surface', () => {
   })
 })
 
-describe('authentication rate limit', () => {
+describe('cross-origin requests', () => {
   let app: TestApp
 
-  beforeEach(() => {
-    app = new TestApp({ authRateLimit: { windowMs: 60_000, limit: 3 } })
+  beforeEach(async () => {
+    app = await TestApp.create({ allowedOrigins: [pagesOrigin] })
   })
 
   afterEach(() => {
     app.close()
   })
 
+  it('lets an allowed origin read responses', async () => {
+    const response = await app.request().get('/api/health').set('Origin', pagesOrigin)
+
+    expect(response.get('Access-Control-Allow-Origin')).toBe(pagesOrigin)
+    expect(response.get('Vary')).toContain('Origin')
+    expect(response.get('Access-Control-Allow-Credentials')).toBeUndefined()
+  })
+
+  it('answers a preflight from an allowed origin', async () => {
+    const response = await app
+      .request()
+      .options('/api/favorites/436524')
+      .set('Origin', pagesOrigin)
+      .set('Access-Control-Request-Method', 'PUT')
+      .set('Access-Control-Request-Headers', 'authorization, content-type')
+
+    expect(response.status).toBe(204)
+    expect(response.get('Access-Control-Allow-Origin')).toBe(pagesOrigin)
+    expect(response.get('Access-Control-Allow-Methods')).toBe('GET, POST, PUT, PATCH, DELETE, OPTIONS')
+    expect(response.get('Access-Control-Allow-Headers')).toBe('Authorization, Content-Type')
+    expect(response.get('Access-Control-Max-Age')).toBe('600')
+  })
+
+  it('gives any other origin nothing to work with', async () => {
+    const simple = await app.request().get('/api/health').set('Origin', 'https://evil.example')
+    const preflight = await app
+      .request()
+      .options('/api/auth/login')
+      .set('Origin', 'https://evil.example')
+      .set('Access-Control-Request-Method', 'POST')
+
+    expect(simple.get('Access-Control-Allow-Origin')).toBeUndefined()
+    expect(preflight.status).toBe(204)
+    expect(preflight.get('Access-Control-Allow-Origin')).toBeUndefined()
+    expect(preflight.get('Access-Control-Allow-Methods')).toBeUndefined()
+  })
+
+  it('keeps the CORS headers on error responses so the client can read them', async () => {
+    const unauthenticated = await app.request().get('/api/favorites').set('Origin', pagesOrigin)
+    const malformed = await app
+      .request()
+      .post('/api/auth/login')
+      .set('Origin', pagesOrigin)
+      .set('Content-Type', 'application/json')
+      .send('{"username": ')
+
+    expect(unauthenticated.status).toBe(401)
+    expect(unauthenticated.get('Access-Control-Allow-Origin')).toBe(pagesOrigin)
+    expect(malformed.status).toBe(400)
+    expect(malformed.get('Access-Control-Allow-Origin')).toBe(pagesOrigin)
+  })
+})
+
+describe('authentication rate limit', () => {
   it('stops sign-in and registration attempts past the limit', async () => {
+    const app = await TestApp.create({ authRateLimit: { windowMs: 60_000, limit: 3 } })
     const allowedStatuses: number[] = []
     for (let attempt = 0; attempt < 3; attempt += 1) {
       const response = await app.login('ada')
@@ -92,6 +156,7 @@ describe('authentication rate limit', () => {
     const login = await app.login('ada')
     const registration = await app.register('ada')
     const session = await app.request().get('/api/auth/session')
+    app.close()
 
     expect(allowedStatuses).toEqual([401, 401, 401])
     expect(login.status).toBe(429)
@@ -102,12 +167,28 @@ describe('authentication rate limit', () => {
     expect(registration.status).toBe(429)
     expect(session.status).toBe(200)
   })
+
+  it('counts attempts per client address forwarded by a trusted proxy', async () => {
+    const app = await TestApp.create({ trustProxy: 1, authRateLimit: { windowMs: 60_000, limit: 1 } })
+    const attemptFrom = (address: string) =>
+      app.request().post('/api/auth/login').set('X-Forwarded-For', address).send({ username: 'ada', password: 'x' })
+
+    const first = await attemptFrom('203.0.113.10')
+    const sameClient = await attemptFrom('203.0.113.10')
+    const otherClient = await attemptFrom('203.0.113.20')
+    app.close()
+
+    expect(app.express.get('trust proxy')).toBe(1)
+    expect(first.status).toBe(401)
+    expect(sameClient.status).toBe(429)
+    expect(otherClient.status).toBe(401)
+  })
 })
 
 describe('unexpected failures', () => {
   it('answers with a generic 500 and logs the cause', async () => {
     const logged: unknown[][] = []
-    const app = new TestApp({
+    const app = await TestApp.create({
       logger: new Logger({
         info: () => undefined,
         warn: () => undefined,
@@ -124,13 +205,13 @@ describe('unexpected failures', () => {
     expect(response.body).toEqual({ error: { code: 'internal_error', message: 'Something went wrong on our side.' } })
     expect(logged).toHaveLength(1)
     expect(logged[0]?.[0]).toMatch(/ ERROR POST \/api\/auth\/login failed$/)
-    expect(logged[0]?.[1]).toBeInstanceOf(TypeError)
+    expect(logged[0]?.[1]).toBeInstanceOf(Error)
   })
 })
 
 describe('HttpServer', () => {
   it('serves on the port it bound and closes the database once it has shut down', async () => {
-    const app = new TestApp()
+    const app = await TestApp.create()
     const server = new HttpServer(app.express, app.database)
 
     const port = await server.listen(0)
@@ -142,12 +223,12 @@ describe('HttpServer', () => {
     expect(port).toBeGreaterThan(0)
     expect(body).toEqual({ status: 'ok' })
     expect(server.close()).toBe(closing)
-    expect(() => app.database.prepare('SELECT 1')).toThrow(TypeError)
+    expect(app.database.isClosed).toBe(true)
   })
 
   it('rejects when the port is already taken', async () => {
-    const first = new TestApp()
-    const second = new TestApp()
+    const first = await TestApp.create()
+    const second = await TestApp.create()
     const running = new HttpServer(first.express, first.database)
     const port = await running.listen(0)
 

@@ -1,7 +1,6 @@
-import type { Agent } from 'supertest'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { FavoriteDto, FavoriteSnapshotDto } from '../src/favorites/Favorite.ts'
-import { TestApp } from './support/TestApp.ts'
+import { TestApp, type TestUser } from './support/TestApp.ts'
 
 const sunflowers: FavoriteSnapshotDto = {
   title: 'Sunflowers',
@@ -34,10 +33,10 @@ const notInCollection = { error: { code: 'not_found', message: 'That work is not
 
 describe('favorites', () => {
   let app: TestApp
-  let ada: Agent
+  let ada: TestUser
 
   beforeEach(async () => {
-    app = new TestApp()
+    app = await TestApp.create()
     ada = await app.signUp('ada')
   })
 
@@ -55,6 +54,7 @@ describe('favorites', () => {
     const response = await app.request()[method](path)
 
     expect(response.status).toBe(401)
+    expect(response.get('WWW-Authenticate')).toBe('Bearer')
     expect(response.body).toEqual({ error: { code: 'unauthenticated', message: 'Sign in to continue.' } })
   })
 

@@ -1,18 +1,5 @@
-import type { Database, Statement } from '../database/Database.ts'
-
-type FavoriteRow = {
-  user_id: number
-  object_id: number
-  title: string
-  artist: string
-  object_date: string
-  medium: string
-  department: string
-  image_url: string | null
-  note: string
-  created_at: string
-  updated_at: string
-}
+import type { Database } from '../database/Database.ts'
+import type { RowReader } from '../database/RowReader.ts'
 
 export type FavoriteRecord = {
   readonly userId: number
@@ -42,79 +29,92 @@ export class FavoriteRepository {
   static readonly #columns =
     'user_id, object_id, title, artist, object_date, medium, department, image_url, note, created_at, updated_at'
 
-  readonly #selectByUser: Statement<[number], FavoriteRow>
-  readonly #selectOne: Statement<FavoriteKey, FavoriteRow>
-  readonly #insert: Statement<FavoriteRecord, FavoriteRow>
-  readonly #updateNote: Statement<NoteChange, FavoriteRow>
-  readonly #delete: Statement<FavoriteKey>
+  readonly #database: Database
 
   constructor(database: Database) {
-    const columns = FavoriteRepository.#columns
-    this.#selectByUser = database.prepare(`
-      SELECT ${columns}
-      FROM favorites
-      WHERE user_id = ?
-      ORDER BY created_at DESC, object_id DESC
-    `)
-    this.#selectOne = database.prepare(`
-      SELECT ${columns}
-      FROM favorites
-      WHERE user_id = @userId AND object_id = @objectId
-    `)
-    this.#insert = database.prepare(`
-      INSERT INTO favorites (${columns})
-      VALUES (
-        @userId, @objectId, @title, @artist, @date, @medium, @department, @imageUrl, @note, @createdAt, @updatedAt
-      )
-      ON CONFLICT DO NOTHING
-      RETURNING ${columns}
-    `)
-    this.#updateNote = database.prepare(`
-      UPDATE favorites
-      SET note = @note, updated_at = @updatedAt
-      WHERE user_id = @userId AND object_id = @objectId
-      RETURNING ${columns}
-    `)
-    this.#delete = database.prepare('DELETE FROM favorites WHERE user_id = @userId AND object_id = @objectId')
+    this.#database = database
   }
 
-  listByUser(userId: number): FavoriteRecord[] {
-    return this.#selectByUser.all(userId).map((row) => FavoriteRepository.#toRecord(row))
+  listByUser(userId: number): Promise<FavoriteRecord[]> {
+    return this.#database.rows(
+      {
+        sql: `SELECT ${FavoriteRepository.#columns} FROM favorites
+          WHERE user_id = ?
+          ORDER BY created_at DESC, object_id DESC`,
+        args: [userId],
+      },
+      FavoriteRepository.#read,
+    )
   }
 
-  find(key: FavoriteKey): FavoriteRecord | null {
-    return FavoriteRepository.#toNullableRecord(this.#selectOne.get(key))
+  find({ userId, objectId }: FavoriteKey): Promise<FavoriteRecord | null> {
+    return this.#database.row(
+      {
+        sql: `SELECT ${FavoriteRepository.#columns} FROM favorites WHERE user_id = ? AND object_id = ?`,
+        args: [userId, objectId],
+      },
+      FavoriteRepository.#read,
+    )
   }
 
-  insertIfAbsent(favorite: FavoriteRecord): FavoriteRecord | null {
-    return FavoriteRepository.#toNullableRecord(this.#insert.get(favorite))
+  insertIfAbsent(favorite: FavoriteRecord): Promise<FavoriteRecord | null> {
+    return this.#database.row(
+      {
+        sql: `INSERT INTO favorites (${FavoriteRepository.#columns})
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT DO NOTHING
+          RETURNING ${FavoriteRepository.#columns}`,
+        args: [
+          favorite.userId,
+          favorite.objectId,
+          favorite.title,
+          favorite.artist,
+          favorite.date,
+          favorite.medium,
+          favorite.department,
+          favorite.imageUrl,
+          favorite.note,
+          favorite.createdAt,
+          favorite.updatedAt,
+        ],
+      },
+      FavoriteRepository.#read,
+    )
   }
 
-  updateNote(change: NoteChange): FavoriteRecord | null {
-    return FavoriteRepository.#toNullableRecord(this.#updateNote.get(change))
+  updateNote({ userId, objectId, note, updatedAt }: NoteChange): Promise<FavoriteRecord | null> {
+    return this.#database.row(
+      {
+        sql: `UPDATE favorites SET note = ?, updated_at = ?
+          WHERE user_id = ? AND object_id = ?
+          RETURNING ${FavoriteRepository.#columns}`,
+        args: [note, updatedAt, userId, objectId],
+      },
+      FavoriteRepository.#read,
+    )
   }
 
-  delete(key: FavoriteKey): boolean {
-    return this.#delete.run(key).changes > 0
+  async delete({ userId, objectId }: FavoriteKey): Promise<boolean> {
+    const removed = await this.#database.run({
+      sql: 'DELETE FROM favorites WHERE user_id = ? AND object_id = ?',
+      args: [userId, objectId],
+    })
+    return removed > 0
   }
 
-  static #toNullableRecord(row: FavoriteRow | undefined): FavoriteRecord | null {
-    return row === undefined ? null : FavoriteRepository.#toRecord(row)
-  }
-
-  static #toRecord(row: FavoriteRow): FavoriteRecord {
+  static #read(row: RowReader): FavoriteRecord {
     return {
-      userId: row.user_id,
-      objectId: row.object_id,
-      title: row.title,
-      artist: row.artist,
-      date: row.object_date,
-      medium: row.medium,
-      department: row.department,
-      imageUrl: row.image_url,
-      note: row.note,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
+      userId: row.integer('user_id'),
+      objectId: row.integer('object_id'),
+      title: row.text('title'),
+      artist: row.text('artist'),
+      date: row.text('object_date'),
+      medium: row.text('medium'),
+      department: row.text('department'),
+      imageUrl: row.optionalText('image_url'),
+      note: row.text('note'),
+      createdAt: row.text('created_at'),
+      updatedAt: row.text('updated_at'),
     }
   }
 }

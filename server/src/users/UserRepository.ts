@@ -1,11 +1,5 @@
-import type { Database, Statement } from '../database/Database.ts'
-
-type UserRow = {
-  id: number
-  username: string
-  password_hash: string
-  created_at: string
-}
+import type { Database } from '../database/Database.ts'
+import type { RowReader } from '../database/RowReader.ts'
 
 export type UserRecord = {
   readonly id: number
@@ -17,43 +11,51 @@ export type UserRecord = {
 export type NewUser = Omit<UserRecord, 'id'>
 
 export class UserRepository {
-  static readonly #columns = 'id, username, password_hash, created_at'
+  static readonly #columns = 'users.id, users.username, users.password_hash, users.created_at'
 
-  readonly #insert: Statement<NewUser, UserRow>
-  readonly #selectById: Statement<[number], UserRow>
-  readonly #selectByUsername: Statement<[string], UserRow>
+  readonly #database: Database
 
   constructor(database: Database) {
-    const columns = UserRepository.#columns
-    this.#insert = database.prepare(`
-      INSERT INTO users (username, password_hash, created_at)
-      VALUES (@username, @passwordHash, @createdAt)
-      ON CONFLICT DO NOTHING
-      RETURNING ${columns}
-    `)
-    this.#selectById = database.prepare(`SELECT ${columns} FROM users WHERE id = ?`)
-    this.#selectByUsername = database.prepare(`SELECT ${columns} FROM users WHERE username = ?`)
+    this.#database = database
   }
 
-  insertIfAbsent(user: NewUser): UserRecord | null {
-    return UserRepository.#toRecord(this.#insert.get(user))
+  insertIfAbsent({ username, passwordHash, createdAt }: NewUser): Promise<UserRecord | null> {
+    return this.#database.row(
+      {
+        sql: `INSERT INTO users (username, password_hash, created_at) VALUES (?, ?, ?)
+          ON CONFLICT DO NOTHING
+          RETURNING ${UserRepository.#columns}`,
+        args: [username, passwordHash, createdAt],
+      },
+      UserRepository.#read,
+    )
   }
 
-  findById(id: number): UserRecord | null {
-    return UserRepository.#toRecord(this.#selectById.get(id))
+  findByUsername(username: string): Promise<UserRecord | null> {
+    return this.#database.row(
+      { sql: `SELECT ${UserRepository.#columns} FROM users WHERE users.username = ?`, args: [username] },
+      UserRepository.#read,
+    )
   }
 
-  findByUsername(username: string): UserRecord | null {
-    return UserRepository.#toRecord(this.#selectByUsername.get(username))
+  findBySession(tokenHash: string, now: string): Promise<UserRecord | null> {
+    return this.#database.row(
+      {
+        sql: `SELECT ${UserRepository.#columns}
+          FROM sessions JOIN users ON users.id = sessions.user_id
+          WHERE sessions.token_hash = ? AND sessions.expires_at > ?`,
+        args: [tokenHash, now],
+      },
+      UserRepository.#read,
+    )
   }
 
-  static #toRecord(row: UserRow | undefined): UserRecord | null {
-    if (row === undefined) return null
+  static #read(row: RowReader): UserRecord {
     return {
-      id: row.id,
-      username: row.username,
-      passwordHash: row.password_hash,
-      createdAt: row.created_at,
+      id: row.integer('id'),
+      username: row.text('username'),
+      passwordHash: row.text('password_hash'),
+      createdAt: row.text('created_at'),
     }
   }
 }

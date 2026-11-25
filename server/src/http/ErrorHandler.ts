@@ -3,6 +3,9 @@ import type { Logger } from '../shared/Logger.ts'
 import { HttpError } from './HttpError.ts'
 
 export class ErrorHandler {
+  static readonly #unauthorizedStatus = 401
+  static readonly #authenticationScheme = 'Bearer'
+
   readonly #logger: Logger
 
   constructor(logger: Logger) {
@@ -19,6 +22,9 @@ export class ErrorHandler {
       return
     }
     const httpError = this.#toHttpError(error, request)
+    if (httpError.status === ErrorHandler.#unauthorizedStatus) {
+      response.set('WWW-Authenticate', ErrorHandler.#authenticationScheme)
+    }
     response.status(httpError.status).json(httpError)
   }
 

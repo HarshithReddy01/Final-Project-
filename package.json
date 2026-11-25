@@ -23,7 +23,6 @@
     "concurrently": "^10.0.7"
   },
   "allowScripts": {
-    "bcrypt": false,
-    "better-sqlite3": false
+    "bcrypt": false
   }
 }

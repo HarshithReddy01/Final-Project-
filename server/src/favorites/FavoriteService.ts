@@ -19,13 +19,14 @@ export class FavoriteService {
     this.#clock = clock
   }
 
-  list(userId: number): Favorite[] {
-    return this.#favorites.listByUser(userId).map((record) => Favorite.fromRecord(record))
+  async list(userId: number): Promise<Favorite[]> {
+    const records = await this.#favorites.listByUser(userId)
+    return records.map((record) => Favorite.fromRecord(record))
   }
 
-  save(userId: number, objectId: number, snapshot: FavoriteSnapshotDto): SavedFavorite {
+  async save(userId: number, objectId: number, snapshot: FavoriteSnapshotDto): Promise<SavedFavorite> {
     const now = this.#clock.now().toISOString()
-    const inserted = this.#favorites.insertIfAbsent({
+    const inserted = await this.#favorites.insertIfAbsent({
       userId,
       objectId,
       ...snapshot,
@@ -34,13 +35,13 @@ export class FavoriteService {
       updatedAt: now,
     })
     if (inserted !== null) return { favorite: Favorite.fromRecord(inserted), created: true }
-    const existing = this.#favorites.find({ userId, objectId })
+    const existing = await this.#favorites.find({ userId, objectId })
     if (existing === null) throw HttpError.notFound(FavoriteService.#missingMessage)
     return { favorite: Favorite.fromRecord(existing), created: false }
   }
 
-  updateNote(userId: number, objectId: number, note: string): Favorite {
-    const updated = this.#favorites.updateNote({
+  async updateNote(userId: number, objectId: number, note: string): Promise<Favorite> {
+    const updated = await this.#favorites.updateNote({
       userId,
       objectId,
       note,
@@ -50,8 +51,8 @@ export class FavoriteService {
     return Favorite.fromRecord(updated)
   }
 
-  remove(userId: number, objectId: number): void {
-    const removed = this.#favorites.delete({ userId, objectId })
+  async remove(userId: number, objectId: number): Promise<void> {
+    const removed = await this.#favorites.delete({ userId, objectId })
     if (!removed) throw HttpError.notFound(FavoriteService.#missingMessage)
   }
 }

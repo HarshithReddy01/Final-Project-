@@ -3,11 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PasswordHasher } from '../src/auth/PasswordHasher.ts'
 import { TestApp } from './support/TestApp.ts'
 
+const tokenPattern = /^[\w-]{43}$/
+
 describe('POST /api/auth/register', () => {
   let app: TestApp
 
-  beforeEach(() => {
-    app = new TestApp()
+  beforeEach(async () => {
+    app = await TestApp.create()
   })
 
   afterEach(() => {
@@ -15,22 +17,31 @@ describe('POST /api/auth/register', () => {
     app.close()
   })
 
-  it('creates the account and returns the public user', async () => {
+  it('creates the account and returns the public user with a new session', async () => {
     const response = await app.register('ada')
+    const now = app.clock.now()
 
     expect(response.status).toBe(201)
     expect(response.body).toEqual({
-      user: { id: expect.any(Number), username: 'ada', createdAt: app.clock.now().toISOString() },
+      user: { id: expect.any(Number), username: 'ada', createdAt: now.toISOString() },
+      session: {
+        token: expect.stringMatching(tokenPattern),
+        expiresAt: new Date(now.getTime() + app.config.sessionTtlMs).toISOString(),
+      },
     })
   })
 
-  it('starts a session with an httpOnly, same-site cookie that expires with it', async () => {
+  it('never lets the response be cached', async () => {
     const response = await app.register('ada')
-    const expiresAt = new Date(app.clock.now().getTime() + app.config.sessionTtlMs)
-    const [pair, ...attributes] = TestApp.sessionCookie(response)?.split('; ') ?? []
 
-    expect(pair).toMatch(/^vitrine_session=[\w-]{43}$/)
-    expect(attributes).toEqual(['Path=/', `Expires=${expiresAt.toUTCString()}`, 'HttpOnly', 'SameSite=Lax'])
+    expect(response.get('Cache-Control')).toBe('no-store')
+  })
+
+  it('issues a different token for every session', async () => {
+    const registration = TestApp.sessionToken(await app.register('ada'))
+    const signIn = TestApp.sessionToken(await app.login('ada'))
+
+    expect(signIn).not.toBe(registration)
   })
 
   it('trims the username before saving it', async () => {
@@ -53,7 +64,6 @@ describe('POST /api/auth/register', () => {
         fields: { username: 'That username is taken.' },
       },
     })
-    expect(TestApp.sessionCookie(response)).toBeUndefined()
   })
 
   it('reports username_taken when a concurrent registration claims the name first', async () => {
@@ -63,11 +73,11 @@ describe('POST /api/auth/register', () => {
     })
 
     const response = await app.register('ada')
-    const users = app.database.prepare<[], { username: string }>('SELECT username FROM users').all()
+    const usernames = await app.database.rows({ sql: 'SELECT username FROM users' }, (row) => row.text('username'))
 
     expect(response.status).toBe(409)
     expect(response.body.error.code).toBe('username_taken')
-    expect(users).toEqual([{ username: 'ADA' }])
+    expect(usernames).toEqual(['ADA'])
   })
 
   it.each([
@@ -138,7 +148,7 @@ describe('POST /api/auth/login', () => {
   let app: TestApp
 
   beforeEach(async () => {
-    app = new TestApp()
+    app = await TestApp.create()
     await app.register('ada')
   })
 
@@ -153,8 +163,8 @@ describe('POST /api/auth/login', () => {
     expect(response.status).toBe(200)
     expect(response.body).toEqual({
       user: { id: expect.any(Number), username: 'ada', createdAt: app.clock.now().toISOString() },
+      session: { token: expect.stringMatching(tokenPattern), expiresAt: expect.any(String) },
     })
-    expect(TestApp.sessionCookie(response)).toMatch(/^vitrine_session=[\w-]{43}; /)
   })
 
   it('matches the username regardless of letter case and surrounding spaces', async () => {
@@ -173,8 +183,7 @@ describe('POST /api/auth/login', () => {
     expect(unknownUser.status).toBe(401)
     expect(wrongPassword.body).toEqual(expected)
     expect(unknownUser.body).toEqual(expected)
-    expect(TestApp.sessionCookie(wrongPassword)).toBeUndefined()
-    expect(TestApp.sessionCookie(unknownUser)).toBeUndefined()
+    expect(wrongPassword.get('WWW-Authenticate')).toBe('Bearer')
   })
 
   it('still compares a password hash when the username does not exist', async () => {

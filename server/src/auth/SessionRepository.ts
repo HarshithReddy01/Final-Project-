@@ -1,11 +1,4 @@
-import type { Database, Statement } from '../database/Database.ts'
-
-type SessionRow = {
-  token_hash: string
-  user_id: number
-  created_at: string
-  expires_at: string
-}
+import type { Database } from '../database/Database.ts'
 
 export type SessionRecord = {
   readonly tokenHash: string
@@ -14,51 +7,25 @@ export type SessionRecord = {
   readonly expiresAt: string
 }
 
-type ActiveSessionQuery = {
-  readonly tokenHash: string
-  readonly now: string
-}
-
 export class SessionRepository {
-  readonly #insert: Statement<SessionRecord>
-  readonly #selectActive: Statement<ActiveSessionQuery, SessionRow>
-  readonly #delete: Statement<[string]>
-  readonly #deleteExpired: Statement<[string]>
+  readonly #database: Database
 
   constructor(database: Database) {
-    this.#insert = database.prepare(`
-      INSERT INTO sessions (token_hash, user_id, created_at, expires_at)
-      VALUES (@tokenHash, @userId, @createdAt, @expiresAt)
-    `)
-    this.#selectActive = database.prepare(`
-      SELECT token_hash, user_id, created_at, expires_at
-      FROM sessions
-      WHERE token_hash = @tokenHash AND expires_at > @now
-    `)
-    this.#delete = database.prepare('DELETE FROM sessions WHERE token_hash = ?')
-    this.#deleteExpired = database.prepare('DELETE FROM sessions WHERE expires_at <= ?')
+    this.#database = database
   }
 
-  create(session: SessionRecord): void {
-    this.#insert.run(session)
+  async create({ tokenHash, userId, createdAt, expiresAt }: SessionRecord): Promise<void> {
+    await this.#database.run({
+      sql: 'INSERT INTO sessions (token_hash, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)',
+      args: [tokenHash, userId, createdAt, expiresAt],
+    })
   }
 
-  findActive(tokenHash: string, now: string): SessionRecord | null {
-    const row = this.#selectActive.get({ tokenHash, now })
-    if (row === undefined) return null
-    return {
-      tokenHash: row.token_hash,
-      userId: row.user_id,
-      createdAt: row.created_at,
-      expiresAt: row.expires_at,
-    }
+  async delete(tokenHash: string): Promise<void> {
+    await this.#database.run({ sql: 'DELETE FROM sessions WHERE token_hash = ?', args: [tokenHash] })
   }
 
-  delete(tokenHash: string): void {
-    this.#delete.run(tokenHash)
-  }
-
-  deleteExpired(now: string): void {
-    this.#deleteExpired.run(now)
+  async deleteExpired(now: string): Promise<void> {
+    await this.#database.run({ sql: 'DELETE FROM sessions WHERE expires_at <= ?', args: [now] })
   }
 }

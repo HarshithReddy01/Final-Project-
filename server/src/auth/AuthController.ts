@@ -3,23 +3,20 @@ import type { RequestHandler, Response, Router } from 'express'
 import { RequestContext } from '../http/RequestContext.ts'
 import { RequestValidator } from '../http/RequestValidator.ts'
 import type { Authentication, AuthService } from './AuthService.ts'
+import { BearerToken } from './BearerToken.ts'
 import { loginSchema, registrationSchema } from './authSchemas.ts'
-import type { SessionCookie } from './SessionCookie.ts'
 
 export type AuthControllerDependencies = {
   readonly auth: AuthService
-  readonly cookie: SessionCookie
   readonly rateLimiter: RequestHandler
 }
 
 export class AuthController {
   readonly router: Router
   readonly #auth: AuthService
-  readonly #cookie: SessionCookie
 
-  constructor({ auth, cookie, rateLimiter }: AuthControllerDependencies) {
+  constructor({ auth, rateLimiter }: AuthControllerDependencies) {
     this.#auth = auth
-    this.#cookie = cookie
     this.router = express.Router()
     this.router.get('/session', this.#session)
     this.router.post('/register', rateLimiter, this.#register)
@@ -33,27 +30,24 @@ export class AuthController {
 
   readonly #register: RequestHandler = async (request, response) => {
     const credentials = RequestValidator.parse(registrationSchema, request.body)
-    const authentication = await this.#auth.register(credentials)
-    this.#sendAuthentication(response, 201, authentication)
+    AuthController.#sendAuthentication(response, 201, await this.#auth.register(credentials))
   }
 
   readonly #login: RequestHandler = async (request, response) => {
     const credentials = RequestValidator.parse(loginSchema, request.body)
-    const authentication = await this.#auth.login(credentials)
-    this.#sendAuthentication(response, 200, authentication)
+    AuthController.#sendAuthentication(response, 200, await this.#auth.login(credentials))
   }
 
-  readonly #logout: RequestHandler = (request, response) => {
-    const token = this.#cookie.read(request)
-    if (token !== null && RequestContext.getUser(response) !== null) {
-      this.#auth.logout(token)
-      this.#cookie.clear(response)
-    }
+  readonly #logout: RequestHandler = async (request, response) => {
+    const token = BearerToken.read(request)
+    if (token !== null) await this.#auth.logout(token)
     response.status(204).end()
   }
 
-  #sendAuthentication(response: Response, status: number, { user, session }: Authentication): void {
-    this.#cookie.write(response, session.token, session.expiresAt)
-    response.status(status).json({ user })
+  static #sendAuthentication(response: Response, status: number, { user, session }: Authentication): void {
+    response.status(status).json({
+      user,
+      session: { token: session.token, expiresAt: session.expiresAt.toISOString() },
+    })
   }
 }

@@ -1,6 +1,5 @@
 import { existsSync } from 'node:fs'
 import path from 'node:path'
-import cookieParser from 'cookie-parser'
 import express from 'express'
 import type { Express, RequestHandler, Router } from 'express'
 import { rateLimit } from 'express-rate-limit'
@@ -9,7 +8,6 @@ import { AuthController } from './auth/AuthController.ts'
 import { AuthMiddleware } from './auth/AuthMiddleware.ts'
 import { AuthService } from './auth/AuthService.ts'
 import { PasswordHasher } from './auth/PasswordHasher.ts'
-import { SessionCookie } from './auth/SessionCookie.ts'
 import { SessionRepository } from './auth/SessionRepository.ts'
 import { SessionTokens } from './auth/SessionTokens.ts'
 import type { AppConfig, RateLimitPolicy } from './config/AppConfig.ts'
@@ -17,6 +15,7 @@ import type { Database } from './database/Database.ts'
 import { FavoriteController } from './favorites/FavoriteController.ts'
 import { FavoriteRepository } from './favorites/FavoriteRepository.ts'
 import { FavoriteService } from './favorites/FavoriteService.ts'
+import { CorsPolicy } from './http/CorsPolicy.ts'
 import { ErrorHandler } from './http/ErrorHandler.ts'
 import { HttpError } from './http/HttpError.ts'
 import type { Clock } from './shared/Clock.ts'
@@ -46,27 +45,35 @@ export class App {
     'form-action': ["'self'"],
   }
 
+  static readonly #noStore: RequestHandler = (_request, response, next) => {
+    response.set('Cache-Control', 'no-store')
+    next()
+  }
+
   readonly express: Express
   readonly #errorHandler: ErrorHandler
 
   constructor(dependencies: AppDependencies) {
+    const { config } = dependencies
     this.#errorHandler = new ErrorHandler(dependencies.logger)
     this.express = express()
     this.express.disable('x-powered-by')
+    this.express.set('trust proxy', config.trustProxy)
     this.express.use(
-      helmet({ contentSecurityPolicy: { useDefaults: false, directives: App.#contentSecurityPolicy } }),
-      express.json({ limit: App.#jsonBodyLimit }),
-      cookieParser(),
+      helmet({
+        contentSecurityPolicy: { useDefaults: false, directives: App.#contentSecurityPolicy },
+        crossOriginResourcePolicy: { policy: 'cross-origin' },
+      }),
     )
+    this.express.use('/api', new CorsPolicy(config.allowedOrigins).handle, App.#noStore)
+    this.express.use(express.json({ limit: App.#jsonBodyLimit }))
     this.express.use('/api', this.#createApiRouter(dependencies))
     this.#serveClient(dependencies)
     this.express.use(this.#errorHandler.handle)
   }
 
   #createApiRouter({ config, database, clock }: AppDependencies): Router {
-    const cookie = new SessionCookie({ secure: config.isProduction })
     const auth = new AuthService({
-      database,
       users: new UserRepository(database),
       sessions: new SessionRepository(database),
       hasher: new PasswordHasher(config.bcryptRounds),
@@ -74,19 +81,15 @@ export class App {
       clock,
       sessionTtlMs: config.sessionTtlMs,
     })
-    const authMiddleware = new AuthMiddleware(auth, cookie)
-    const authController = new AuthController({
-      auth,
-      cookie,
-      rateLimiter: App.#createRateLimiter(config.authRateLimit),
-    })
+    const authMiddleware = new AuthMiddleware(auth)
+    const authController = new AuthController({ auth, rateLimiter: App.#createRateLimiter(config.authRateLimit) })
     const favoriteController = new FavoriteController(new FavoriteService(new FavoriteRepository(database), clock))
 
     const api = express.Router()
-    api.use(authMiddleware.attachUser)
     api.get('/health', (_request, response) => {
       response.json({ status: 'ok' })
     })
+    api.use(authMiddleware.attachUser)
     api.use('/auth', authController.router)
     api.use('/favorites', authMiddleware.requireUser, favoriteController.router)
     api.use(this.#errorHandler.notFound)
@@ -97,7 +100,7 @@ export class App {
     if (config.environment === 'test') return
     const indexFile = path.join(config.clientDistPath, 'index.html')
     if (!existsSync(indexFile)) {
-      if (config.isProduction) logger.warn(`No client build at ${config.clientDistPath}; serving the API only.`)
+      if (config.isProduction) logger.info(`No client build at ${config.clientDistPath}; serving the API only.`)
       return
     }
     this.express.use(
