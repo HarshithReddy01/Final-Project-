@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: vitrine-api
+    runtime: node
+    plan: free
+    region: virginia
+    buildCommand: npm ci --include=dev && npm run build -w server
+    startCommand: npm run start -w server
+    healthCheckPath: /api/health
+    buildFilter:
+      paths:
+        - server/**
+        - package.json
+        - package-lock.json
+        - render.yaml
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "26"
+      - key: ALLOWED_ORIGINS
+        value: https://harshithreddy01.github.io
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
