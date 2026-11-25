@@ -17,6 +17,10 @@
   margin: 0;
 }
 
+.figure .frame {
+  --frame-max-height: 62vh;
+}
+
 .placeholder {
   aspect-ratio: 4 / 5;
   background: var(--mat);

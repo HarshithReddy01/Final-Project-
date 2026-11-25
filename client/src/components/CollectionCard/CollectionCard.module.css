@@ -1,6 +1,7 @@
 .card {
-  display: grid;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
   gap: var(--space-3);
   min-width: 0;
 }
@@ -30,6 +31,7 @@
 }
 
 .footer {
+  margin-top: auto;
   display: flex;
   flex-wrap: wrap;
   align-items: center;

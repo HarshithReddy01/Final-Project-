@@ -64,7 +64,13 @@ export function ArtworkViewer({ artwork }: ArtworkViewerProps) {
                   aria-label={`Show view ${index + 1} of ${images.length}`}
                   onClick={() => setSelectedIndex(index)}
                 >
-                  <ArtworkFrame src={image.displayUrl} alt="" title={artwork.title} aspect="1 / 1" />
+                  <ArtworkFrame
+                    src={image.displayUrl}
+                    alt=""
+                    title={artwork.title}
+                    aspect="1 / 1"
+                    className={styles.thumbFrame}
+                  />
                 </button>
               </li>
             ))}

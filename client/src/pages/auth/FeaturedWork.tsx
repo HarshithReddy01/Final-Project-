@@ -25,7 +25,9 @@ export function FeaturedWork() {
             src={artwork.data.primaryImage?.displayUrl ?? null}
             alt={artwork.data.altText}
             title={artwork.data.title}
+            aspect="natural"
             loading="eager"
+            className={styles.frame}
           />
           <figcaption>
             <ArtworkCaption

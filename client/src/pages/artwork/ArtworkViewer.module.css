@@ -62,6 +62,10 @@
   transition: border-color var(--duration-fast) var(--ease-out);
 }
 
+.thumb .thumbFrame {
+  --frame-padding: var(--space-1);
+}
+
 .thumb[aria-pressed='true'] {
   border-color: var(--ink);
 }

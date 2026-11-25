@@ -45,6 +45,11 @@ select {
   accent-color: var(--ink);
 }
 
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
 button {
   padding: 0;
   border: 0;
