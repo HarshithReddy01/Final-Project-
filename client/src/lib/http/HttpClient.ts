@@ -1,8 +1,13 @@
 import { ApiError } from './ApiError.ts'
 import { HttpStatus } from './HttpStatus.ts'
 
+export type AccessTokenSource = {
+  readonly token: string | null
+}
+
 export type HttpClientOptions = {
   readonly credentials: RequestCredentials
+  readonly tokens?: AccessTokenSource
 }
 
 export type RequestOptions = {
@@ -15,10 +20,12 @@ type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 export class HttpClient {
   readonly #baseUrl: string
   readonly #credentials: RequestCredentials
+  readonly #tokens: AccessTokenSource | null
 
   constructor(baseUrl: string, options: HttpClientOptions) {
     this.#baseUrl = baseUrl
     this.#credentials = options.credentials
+    this.#tokens = options.tokens ?? null
   }
 
   get<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -45,7 +52,7 @@ export class HttpClient {
     const response = await fetch(this.#url(path, options.query), {
       method,
       credentials: this.#credentials,
-      headers: HttpClient.#headers(body),
+      headers: this.#headers(body),
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: options.signal,
     }).catch(HttpClient.#rethrow)
@@ -59,9 +66,12 @@ export class HttpClient {
     return search === '' ? `${this.#baseUrl}${path}` : `${this.#baseUrl}${path}?${search}`
   }
 
-  static #headers(body: unknown): HeadersInit {
-    if (body === undefined) return { Accept: 'application/json' }
-    return { Accept: 'application/json', 'Content-Type': 'application/json' }
+  #headers(body: unknown): Record<string, string> {
+    const headers: Record<string, string> = { Accept: 'application/json' }
+    if (body !== undefined) headers['Content-Type'] = 'application/json'
+    const token = this.#tokens?.token ?? null
+    if (token !== null) headers.Authorization = `Bearer ${token}`
+    return headers
   }
 
   static async #readBody(response: Response): Promise<unknown> {

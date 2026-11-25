@@ -3,6 +3,7 @@ import { QueryKeys } from '../hooks/QueryKeys.ts'
 import { SessionCache } from '../hooks/SessionCache.ts'
 import { ApiError } from '../lib/http/ApiError.ts'
 import { HttpStatus } from '../lib/http/HttpStatus.ts'
+import { services } from '../lib/services.ts'
 
 export class QueryClientFactory {
   static readonly staleTime = 5 * 60_000
@@ -38,7 +39,9 @@ export class QueryClientFactory {
   }
 
   static #endSessionOn(client: QueryClient, error: Error): void {
-    if (error instanceof ApiError && error.isUnauthorized) new SessionCache(client).signedOut()
+    if (!(error instanceof ApiError && error.isUnauthorized)) return
+    services.auth.forgetSession()
+    new SessionCache(client).signedOut()
   }
 
   static #shouldRetry(failureCount: number, error: Error): boolean {

@@ -1,0 +1,14 @@
+.region {
+  display: block;
+}
+
+.notice {
+  display: block;
+  padding: var(--space-2) var(--gutter);
+  border-bottom: var(--hairline);
+  background: var(--paper-raised);
+  color: var(--ink-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  text-align: center;
+}

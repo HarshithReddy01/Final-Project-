@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Outlet, ScrollRestoration, useLocation } from 'react-router'
 import { SiteFooter } from './SiteFooter.tsx'
+import { ServerWakeNotice } from './ServerWakeNotice.tsx'
 import { SiteHeader } from './SiteHeader.tsx'
 import styles from './RootLayout.module.css'
 
@@ -21,6 +22,7 @@ export function RootLayout() {
         Skip to content
       </a>
       <SiteHeader />
+      <ServerWakeNotice />
       <main id="content" ref={mainRef} tabIndex={-1} className={styles.main}>
         <Outlet />
       </main>

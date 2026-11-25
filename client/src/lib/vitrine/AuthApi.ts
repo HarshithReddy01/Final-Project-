@@ -1,5 +1,6 @@
 import type { HttpClient } from '../http/HttpClient.ts'
-import type { SessionResponseDto, UserResponseDto } from './dto.ts'
+import type { AuthenticationResponseDto, SessionResponseDto } from './dto.ts'
+import type { SessionTokenStore } from './SessionTokenStore.ts'
 import { User } from './User.ts'
 
 export type Credentials = {
@@ -9,27 +10,44 @@ export type Credentials = {
 
 export class AuthApi {
   readonly #http: HttpClient
+  readonly #tokens: SessionTokenStore
 
-  constructor(http: HttpClient) {
+  constructor(http: HttpClient, tokens: SessionTokenStore) {
     this.#http = http
+    this.#tokens = tokens
   }
 
   async getSession(signal?: AbortSignal): Promise<User | null> {
+    if (this.#tokens.token === null) return null
     const { user } = await this.#http.get<SessionResponseDto>('/auth/session', { signal })
-    return user === null ? null : User.fromDto(user)
+    if (user !== null) return User.fromDto(user)
+    this.#tokens.clear()
+    return null
   }
 
-  async signIn(credentials: Credentials): Promise<User> {
-    const { user } = await this.#http.post<UserResponseDto>('/auth/login', credentials)
-    return User.fromDto(user)
+  signIn(credentials: Credentials): Promise<User> {
+    return this.#authenticate('/auth/login', credentials)
   }
 
-  async register(credentials: Credentials): Promise<User> {
-    const { user } = await this.#http.post<UserResponseDto>('/auth/register', credentials)
-    return User.fromDto(user)
+  register(credentials: Credentials): Promise<User> {
+    return this.#authenticate('/auth/register', credentials)
   }
 
   async signOut(): Promise<void> {
-    await this.#http.post('/auth/logout')
+    try {
+      if (this.#tokens.token !== null) await this.#http.post('/auth/logout')
+    } finally {
+      this.#tokens.clear()
+    }
+  }
+
+  forgetSession(): void {
+    this.#tokens.clear()
+  }
+
+  async #authenticate(path: string, credentials: Credentials): Promise<User> {
+    const { user, session } = await this.#http.post<AuthenticationResponseDto>(path, credentials)
+    this.#tokens.save(session.token)
+    return User.fromDto(user)
   }
 }

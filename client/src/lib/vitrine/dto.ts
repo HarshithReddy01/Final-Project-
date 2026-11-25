@@ -32,8 +32,14 @@ export type SessionResponseDto = {
   readonly user: UserDto | null
 }
 
-export type UserResponseDto = {
+export type SessionTokenDto = {
+  readonly token: string
+  readonly expiresAt: string
+}
+
+export type AuthenticationResponseDto = {
   readonly user: UserDto
+  readonly session: SessionTokenDto
 }
 
 export type FavoritesResponseDto = {

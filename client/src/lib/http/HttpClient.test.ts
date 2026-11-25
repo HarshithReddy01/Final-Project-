@@ -30,6 +30,19 @@ describe('HttpClient', () => {
     expect(init?.body).toBeUndefined()
   })
 
+  it('sends the current bearer token when one is available', async () => {
+    const fetchMock = stubFetch(async () => json(200, {}))
+    const source: { token: string | null } = { token: null }
+    const authorized = new HttpClient('/api', { credentials: 'omit', tokens: source })
+
+    await authorized.get('/auth/session')
+    source.token = 'abc'
+    await authorized.get('/auth/session')
+
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).toEqual({ Accept: 'application/json' })
+    expect(fetchMock.mock.calls[1]?.[1]?.headers).toEqual({ Accept: 'application/json', Authorization: 'Bearer abc' })
+  })
+
   it('leaves the question mark off an empty query', async () => {
     const fetchMock = stubFetch(async () => json(200, {}))
 

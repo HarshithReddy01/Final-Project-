@@ -9,6 +9,8 @@ import { NotFoundPage } from '../pages/not-found/NotFoundPage.tsx'
 import { RootLayout } from './RootLayout.tsx'
 import { RouteErrorBoundary } from './RouteErrorBoundary.tsx'
 
+const basename = import.meta.env.BASE_URL.replace(/\/+$/, '') || '/'
+
 export const router = createBrowserRouter([
   {
     path: '/',
@@ -30,4 +32,4 @@ export const router = createBrowserRouter([
       { path: '*', element: <NotFoundPage /> },
     ],
   },
-])
+], { basename })
