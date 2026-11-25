@@ -58,6 +58,7 @@ export class HttpClient {
     }).catch(HttpClient.#rethrow)
     const payload = await HttpClient.#readBody(response).catch(HttpClient.#rethrow)
     if (!response.ok) throw ApiError.fromResponse(response.status, payload)
+    if (payload === undefined && response.status !== HttpStatus.noContent) throw ApiError.unreadable(response.status)
     return payload
   }
 

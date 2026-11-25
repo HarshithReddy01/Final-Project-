@@ -84,6 +84,18 @@ describe('HttpClient', () => {
     await expect(client.get('/favorites')).rejects.toMatchObject({ status: 502, code: 'http_error' })
   })
 
+  it('rejects a successful response that is not JSON, such as a bot-protection page', async () => {
+    stubFetch(async () => new Response('<html>Request unsuccessful</html>', { status: 200, headers: { 'Content-Type': 'text/html' } }))
+
+    await expect(client.get('/objects/1')).rejects.toMatchObject({ status: 200, code: 'unreadable_response' })
+  })
+
+  it('rejects a successful response whose JSON is malformed', async () => {
+    stubFetch(async () => new Response('{"objectID": ', { status: 200, headers: { 'Content-Type': 'application/json' } }))
+
+    await expect(client.get('/objects/1')).rejects.toMatchObject({ code: 'unreadable_response' })
+  })
+
   it('reports a failed connection as a network error', async () => {
     stubFetch(async () => {
       throw new TypeError('Failed to fetch')

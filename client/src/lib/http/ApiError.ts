@@ -55,6 +55,10 @@ export class ApiError extends Error {
     )
   }
 
+  static unreadable(status: number): ApiError {
+    return new ApiError(status, 'unreadable_response', 'The server sent a response we couldn’t read. Try again in a moment.')
+  }
+
   static fromResponse(status: number, body: unknown): ApiError {
     const error = ApiError.#readErrorBody(body)
     if (error !== null) return new ApiError(status, error.code, error.message, error.fields)
