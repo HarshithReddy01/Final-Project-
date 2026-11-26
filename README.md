@@ -2,9 +2,7 @@
 
 A quiet reading room for The Metropolitan Museum of Art's Open Access collection. Search more than 470,000 works, read any record as a museum wall label, and keep a private collection with your own notes.
 
-**Live site:** https://harshithreddy01.github.io/Final-Project-/
-
-The API runs at https://vitrine-api-t15u.onrender.com on Render's free plan, which sleeps when idle. Searching works instantly because it talks to The Met directly; the first sign-in after a quiet period can take up to a minute while the server wakes up.
+Deployed URL: https://harshithreddy01.github.io/Final-Project-
 
 ## Features
 
